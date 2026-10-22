@@ -77,6 +77,46 @@ def scan_asset(asset,frame,period='短期',benchmark=None,feed='Yahoo参考'):
         confirmed=bool(trend and mom and (hit or (pull and med)) and vol_ok and score>=cfg['trigger_score'] and (med or expansion or prior_squeeze))
         ready=bool(trend and mom and near and score>=cfg['ready_score'])
         status=(side+'初動') if confirmed else (side+'準備') if ready else '様子見'
+        # Show actual detected conditions, not a claim of predictive effectiveness.
+        technical=[]
+        def note_if(ok,name,detail):
+            if ok: technical.append({'name':name,'detail':detail})
+        direction='上昇' if side=='買い' else '下降'
+        breakout_name='高値ブレイク' if side=='買い' else '安値ブレイク'
+        note_if(bool(hit),breakout_name,
+                f'終値 {c:.5g} が直前{lb}本の'+
+                (f'最高値 {hi:.5g} を上抜け' if side=='買い' else f'最安値 {lo:.5g} を下抜け')+
+                ('、かつBB外側で確定。' if not med else '。'))
+        note_if(bool(pull),'EMA押し目買い' if side=='買い' else 'EMA戻り売り',
+                '中期：EMA20付近への反応と当日の反転足を検出（確定足ベース）。')
+        note_if(bool(near) and not hit and not pull,'ブレイク接近',
+                f'直前{lb}本の'+('最高値' if side=='買い' else '最安値')+f'まで {dist:.2f} ATR。まだ突破は未確定。')
+        note_if(bool(expansion),'BBエクスパンション',
+                f'ボリンジャーバンド幅が前日比 {(bb/pb-1)*100:.1f}% 拡大（5%超）。拡大自体は方向を示しません。' if pb>0 else 'ボリンジャーバンド幅が拡大。')
+        note_if(bool(prior_squeeze),'BBスクイーズ後',
+                '過去12本（当日を除く）にBB幅パーセンタイル25%未満の日が存在。現在の幅が狭いとは限りません。')
+        note_if(bool(trend),direction+'トレンド',
+                '短期：終値・EMA20・EMA50の並びとEMA20傾斜が一致。' if not med else '中期：EMA50とEMA200の並び、週足方向が一致。')
+        note_if(bool(mom),'RSI・MACD一致',
+                f'RSI {numerical(a["rsi"]):.1f} / MACDヒストグラム '+('プラス' if side=='買い' else 'マイナス')+'。')
+        note_if(bool(has_vol and vol_ok),'株式出来高条件',
+                f'当日の出来高が直前20本平均の {(vratio if vratio is not None else 0):.2f} 倍（必要 {vol_threshold:g} 倍以上）。')
+        note_if(bool(rso),'指数比の相対強度',
+                f'市場指数との差（20本）：{(rs if rs is not None else 0):+.2f}ポイント。指数より'+('強い' if side=='買い' else '弱い')+'。')
+        note_if(bool(med and (wlong if side=='買い' else wshort)),'週足トレンド一致',
+                '確定週足ベースの10週EMAと方向が一致。')
+        note_if(cycle==('ライト傾向' if side=='買い' else 'レフト傾向'),
+                'ライトトランスレーション' if side=='買い' else 'レフトトランスレーション',
+                f'直近の確認済み安値〜安値サイクルで高値位置が {cycle_peak_pct}% 。近似判定であり予測ではありません。')
+        note_if(bool(wyckoff_up if side=='買い' else wyckoff_dn),'ワイコフ型ブレイク（近似）',
+                '過去のBB収縮と価格突破が重なった状態。厳密なワイコフの蓄積・分配確認ではありません。')
+        technical_names=[item['name'] for item in technical]
+        headline=next((name for name in (
+            breakout_name,'EMA押し目買い' if side=='買い' else 'EMA戻り売り',
+            'ブレイク接近','BBエクスパンション',
+            'ライトトランスレーション' if side=='買い' else 'レフトトランスレーション',
+            direction+'トレンド') if name in technical_names), '明確な形状は未検出')
+        missing_checks=[name for name,ok,_ in checks if not ok]
         # Stop behind swing, capped by ATR floor; reject invalid or unreasonably broad levels later.
         if side=='買い':
             swing=numerical(d['low'].iloc[-11:-1].min(),c)
@@ -98,7 +138,9 @@ def scan_asset(asset,frame,period='短期',benchmark=None,feed='Yahoo参考'):
             完了サイクル=cycle,サイクル高値位置パーセント=cycle_peak_pct,
             ワイコフ類似=('蓄積候補の上放れ' if wyckoff_up else '分配候補の下放れ' if wyckoff_dn else '未検出'),
             上値突破基準=hi,下値割れ基準=lo,週足方向=('上' if wlong else '下' if wshort else '中立') if med else '-',
-            検証条件=' / '.join(name for name,ok,_ in checks if ok),データ=feed,
+            検証条件=' / '.join(name for name,ok,_ in checks if ok),
+            主な根拠=headline,分析根拠=technical_names,根拠詳細=technical,
+            未成立条件=missing_checks,データ=feed,
             注意=(asset.note or ('Yahooの参考価格。SBI約定価格ではありません' if asset.market.startswith('SBI') else '')) + (' ／ RSI過熱注意' if (numerical(a['rsi'])>=85 if side=='買い' else numerical(a['rsi'])<=15) else ''),
         ))
     return candidates
