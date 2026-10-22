@@ -1,0 +1,1 @@
+"""Independent trading scanner package."""

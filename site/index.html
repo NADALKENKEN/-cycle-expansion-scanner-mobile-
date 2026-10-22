@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="株・FX・CFDの短期・中期トレンドを比較できる独立型スキャナー。価格は公開市場の参考値です。">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="市場スキャナー">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <title>Cycle × Expansion | 独立マルチ市場スキャナー</title>
+</head>
+<body>
+  <main class="shell" id="app">
+    <header class="masthead">
+      <div class="brand"><span class="brand-mark">C<span>×</span>E</span><div class="brand-words"><b>CYCLE / EXPANSION</b><small>MULTI-MARKET SCANNER</small></div></div>
+      <div class="top-actions"><span class="status-pip" id="health-dot"></span><span id="health-text">読込中</span><button class="refresh" id="refresh" type="button" aria-label="公開済みの最新レポートを再読込">↻ 更新</button></div>
+    </header>
+    <section class="hero">
+      <div class="eyebrow">THE MARKET SIGNAL DESK <span class="slash">/</span> v1 MOBILE</div>
+      <h1>次のチャンスを、<br><em>市場横断</em>で捉える。</h1>
+      <p class="hero-sub">株式・為替・CFDを同じルールで分析。短期と中期、買いとショートを独立判定。</p>
+      <div class="meta-bar"><span>分析更新 <strong id="updated-at">未実行</strong></span><span>取得 <strong id="feed-count">0 / 0</strong> 商品</span><span class="source-tag">公開参考価格 / 非リアルタイム</span></div>
+    </section>
+    <section class="stats" aria-label="市場のシグナル集計">
+      <div class="stat stat-long"><div class="stat-label">↗ 買い初動</div><strong id="n-buy">—</strong><div class="stat-sub">条件成立</div></div>
+      <div class="stat stat-short"><div class="stat-label">↘ ショート初動</div><strong id="n-short">—</strong><div class="stat-sub">条件成立</div></div>
+      <div class="stat"><div class="stat-label">◎ 監視候補</div><strong id="n-ready">—</strong><div class="stat-sub">ブレイク前後</div></div>
+      <div class="stat"><div class="stat-label">◈ 評価件数</div><strong id="n-rows">—</strong><div class="stat-sub">期間・売買方向別</div></div>
+    </section>
+    <section class="selector" aria-label="保有期間を選択">
+      <button id="h-short" type="button" class="horizon active" data-horizon="短期"><span class="tab-symbol">↯</span><span><b>短期トレード</b><small>3〜10営業日 / 初動・急変</small></span></button>
+      <button id="h-medium" type="button" class="horizon" data-horizon="中期"><span class="tab-symbol">⌁</span><span><b>中期トレード</b><small>2週間〜3か月 / トレンド継続</small></span></button>
+    </section>
+    <section class="control-section">
+      <div class="section-title-row"><h2>シグナル・レーダー</h2><span class="quiet" id="filtered-count">0件</span></div>
+      <div class="segmented" role="group" aria-label="売買方向">
+        <button type="button" class="chip active" data-side="すべて">全方向</button>
+        <button type="button" class="chip" data-side="買い">↗ 買い</button>
+        <button type="button" class="chip" data-side="ショート">↘ ショート</button>
+      </div>
+      <div class="filter-grid">
+        <label class="field"><span>対象市場</span><select id="market"><option value="すべて">すべての市場</option><option value="日本株">日本株</option><option value="米国株">米国株</option><option value="SBI FX">SBI FX</option><option value="SBI CFD">SBI CFD</option></select></label>
+        <label class="field"><span>抽出条件</span><select id="signal"><option value="候補">初動と準備</option><option value="初動">初動のみ</option><option value="準備">準備のみ</option><option value="すべて">全評価を表示</option></select></label>
+      </div>
+      <label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="銘柄名・ティッカーで検索" autocomplete="off"></label>
+    </section>
+    <div id="message" class="message" role="status" aria-live="polite"></div>
+    <section class="cards" id="results" aria-live="polite"></section>
+    <section class="technical-note">
+      <h3>判定基準 <span>RULEBOOK</span></h3>
+      <div class="rule"><b>短期</b><p>日足20日ブレイク・EMA20/50・BB拡大・RSI/MACD・株式出来高を中心に評価。</p></div>
+      <div class="rule"><b>中期</b><p>日足55日ブレイクまたは押し目・EMA50/200・週足トレンドを中心に評価。</p></div>
+      <div class="rule"><b>損切り・利確</b><p>参考損切りは直近の高安とATRから試算。2R目標は損失幅の2倍。実際の逆指値価格ではありません。</p></div>
+      <p class="caution">※ 本画面は投資判断を補助する参考スクリーニングです。推奨・保証・自動発注ではありません。FX・CFDの参照価格はSBIの提示Bid/Ask、取扱限月、スプレッド、スワップ、調整額と異なります。実際の発注前にSBIで銘柄・数量・証拠金・価格をご確認ください。分析結果と株式の出来高・FXの取引量は別物です。</p>
+    </section>
+    <footer><strong>C × E</strong> <span>Independent scanner • No connection to existing software</span><span>更新はGitHub Actionsで実行</span></footer>
+  </main>
+  <script defer src="./app.js"></script>
+</body>
+</html>

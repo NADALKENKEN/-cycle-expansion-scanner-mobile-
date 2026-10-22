@@ -1,18 +1,29 @@
-name: Cycle Expansion iPhone Scanner
+name: Mobile scanner - analyze and publish
+
 on:
+  workflow_dispatch:
   push:
     branches: [main]
-  workflow_dispatch:
+    paths:
+      - 'scanner/**'
+      - 'site/**'
+      - 'export_site.py'
+      - 'requirements.txt'
+      - '.github/workflows/pages.yml'
+      - 'universe.csv'
   schedule:
+    # JST weekday mornings 07:35 (previous UTC calendar day) and evenings 21:35.
+    # GitHub may delay or skip scheduled jobs during congestion.
     - cron: '35 22 * * 0-4'
     - cron: '35 12 * * 1-5'
+
+concurrency:
+  group: mobile-scanner-pages
+  cancel-in-progress: false
+
 permissions:
   contents: read
-  pages: write
-  id-token: write
-concurrency:
-  group: cycle-expansion-mobile-pages
-  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,36 +33,25 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Unpack independent scanner
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import base64, lzma, json
-          archive=Path('scanner_source.b64').read_text(encoding='ascii')
-          contents=json.loads(lzma.decompress(base64.b64decode(archive)).decode('utf-8'))
-          for fname, value in contents.items():
-              file=Path(fname)
-              file.parent.mkdir(parents=True, exist_ok=True)
-              file.write_text(value, encoding='utf-8')
-          print('Restored',len(contents),'scanner files')
-          PY
-      - name: Install dependencies
+          cache: 'pip'
+      - name: Install scan dependencies
         run: python -m pip install -r requirements.txt
-      - name: Run scanner tests
+      - name: Verify calculation code
         run: python -m pytest -q
-      - name: Scan markets and export iPhone dashboard
+      - name: Fetch prices and calculate short/medium signals
         run: |
           if [ -f universe.csv ]; then
             python export_site.py --universe universe.csv
           else
             python export_site.py
           fi
-      - name: Configure Pages
+      - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload scanner site
+      - name: Upload site
         uses: actions/upload-pages-artifact@v4
         with:
           path: site
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -63,6 +63,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Publish to GitHub Pages
+      - name: Publish site to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
