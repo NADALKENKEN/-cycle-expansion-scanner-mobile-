@@ -35,6 +35,14 @@ function card(r,charts){
     r.bb_width_rank!=null?`BB順位 ${fmt(r.bb_width_rank)}%`:null].filter(Boolean);
   const bitHtml=bits.map(b=>`<span class="metric">${esc(b)}</span>`).join('');
   const tradingRisk=(isFiniteNumber(r.price)&&isFiniteNumber(r.stop)&&r.price>0)?(Math.abs(r.price-r.stop)/r.price*100):null;
+  const entryValue=isFiniteNumber(r.entry_score)?r.entry_score:null;
+  const entryClass=entryValue===null?'none':r.entry_state?.includes('見送り')?'avoid':r.entry_state?.includes('待ち')||r.entry_state?.includes('慎重')?'watch':'positive';
+  const entryNotes=Array.isArray(r.entry_notes)?r.entry_notes:[];
+  const entryPanel=`<section class="entry-panel ${entryClass}" aria-label="エントリー適性評価">
+      <div class="entry-header"><span>🎯 エントリー適性 <small>今から入る場合 / 100</small></span><strong>${entryValue===null?'—':fmt(entryValue)}<small>/100</small></strong></div>
+      <p class="entry-state">${esc(r.entry_state||'次回の分析で評価')}</p>
+      <p class="entry-explain">${esc(entryNotes.length?entryNotes.slice(0,3).join(' ／ '):'方向の強さとは別に、損切り幅や価格の行き過ぎを評価します。')}</p>
+    </section>`;
   const evidence=Array.isArray(r.technical_details)?r.technical_details:[];
   const names=Array.isArray(r.technical_tags)?r.technical_tags:[];
   const labels=names.length?names:(r.passed_checks?r.passed_checks.split(' / '):[]);
@@ -45,8 +53,9 @@ function card(r,charts){
   return `<article class="card ${cls}">
     <div class="head"><div><div class="labels"><span class="tag">${esc(r.market)}</span><span class="tag ${tagClass}">${esc(status)}</span></div>
     <h3 class="title">${esc(r.name)}</h3><div class="ticker">${esc(r.symbol)} &nbsp;·&nbsp; ${esc(r.horizon)}</div></div>
-    <div class="score"><strong>${isFiniteNumber(r.score)?fmt(r.score):'—'}</strong><small>SIGNAL SCORE</small></div></div>
+    <div class="score"><strong>${isFiniteNumber(r.score)?fmt(r.score):'—'}</strong><small>トレンド方向の条件一致度</small></div></div>
     <div class="price-row"><div><strong>${fmt(r.price)}</strong><small>参考終値（SBI約定価格ではありません）</small></div><span class="date">${esc(r.bar_date||'—')}</span></div>
+    ${entryPanel}
     <div class="risk"><div class="risk-item stop"><small>損切り参考</small><b>${fmt(r.stop)}</b></div><div class="risk-item profit"><small>目標価格 2R</small><b>${fmt(r.target_2r)}</b></div></div>
     <div class="technical-found"><div class="technical-title">🔎 検出したテクニカル <small>成立した条件のみ</small></div>
       <div class="technical-badges">${techBadges}</div>
@@ -73,7 +82,7 @@ function filterRows(){
     (state.technique==='すべて'||(Array.isArray(r.technical_tags)&&r.technical_tags.some(tag=>tag.includes(state.technique)))) &&
     (state.signal==='すべて'||(state.signal==='候補' && (r.signal?.includes('初動')||r.signal?.includes('準備')))||(state.signal==='初動'&&r.signal?.includes('初動'))||(state.signal==='準備'&&r.signal?.includes('準備'))) &&
     (!term||String(r.name+' '+r.symbol+' '+r.market).toLocaleLowerCase('ja-JP').includes(term))
-  ).sort((a,b)=>(scoreSignal(a.signal)-scoreSignal(b.signal)) || ((b.score||0)-(a.score||0)));
+  ).sort((a,b)=>(scoreSignal(a.signal)-scoreSignal(b.signal)) || ((b.entry_score??-1)-(a.entry_score??-1)) || ((b.score||0)-(a.score||0)));
 }
 function banner(message, type='info') { $('message').innerHTML=message?`<div class="banner ${type==='info'?'':esc(type)}">${esc(message)}</div>`:''; }
 function render(){
@@ -110,21 +119,35 @@ function render(){
     $('health-dot').className='status-pip ok';$('health-text').textContent='更新済';banner('');
   }
 }
+let refreshTextTimer=null;
 async function reload(){
-  $('refresh').disabled=true;
+  const button=$('refresh');
+  if(button.disabled)return;
+  if(refreshTextTimer!==null){clearTimeout(refreshTextTimer);refreshTextTimer=null;}
+  button.disabled=true;
+  button.textContent='⟳ 読込中';
   $('health-text').textContent='読込中';
+  let success=false;
   try{
     const res=await fetch('./data/latest.json?ts='+Date.now(),{cache:'no-store'});
     if(!res.ok)throw new Error('HTTP '+res.status);
     const json=await res.json();
     if(!json.meta||!Array.isArray(json.rows))throw new Error('不正なレポート形式');
-    state.payload=json;render();
+    state.payload=json;
+    render();
+    success=true;
+    button.textContent='✓ 読込完了';
   }catch(err){
     $('health-dot').className='status-pip bad';$('health-text').textContent='読込失敗';
     banner('レポートを読み込めませんでした。ネットワーク接続とGitHub Pages公開設定を確認してください（'+String(err.message).slice(0,80)+'）。','error');
     $('results').innerHTML='<div class="empty"><b>公開済みのデータを取得できません</b><p>ブラウザを再読込してください。</p></div>';
-  }finally{ $('refresh').disabled=false; }
+    button.textContent='再試行';
+  }finally{
+    button.disabled=false;
+    if(success)refreshTextTimer=setTimeout(()=>{button.textContent='↻ 再読込';refreshTextTimer=null;},2500);
+  }
 }
+
 document.querySelectorAll('.horizon').forEach(el=>el.addEventListener('click',()=>{state.horizon=el.dataset.horizon;render();}));
 document.querySelectorAll('.chip').forEach(el=>el.addEventListener('click',()=>{state.side=el.dataset.side;render();}));
 $('market').addEventListener('change',e=>{state.market=e.target.value;render();});
