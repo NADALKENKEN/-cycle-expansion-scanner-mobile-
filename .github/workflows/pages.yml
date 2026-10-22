@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'scanner/**'
+      - 'tests/**'
       - 'site/**'
       - 'export_site.py'
       - 'requirements.txt'
