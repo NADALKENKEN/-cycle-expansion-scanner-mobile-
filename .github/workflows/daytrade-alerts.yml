@@ -1,0 +1,91 @@
+name: Daytrade entry alerts - Pushover
+
+on:
+  workflow_dispatch:
+    inputs:
+      send_test:
+        description: "Send a Pushover connection test only (no trading alert)"
+        type: boolean
+        default: false
+  schedule:
+    # GitHub schedules use UTC and are best-effort. No guaranteed real-time execution.
+    # Offset from top of hour to avoid peak scheduler congestion; weekdays only.
+    - cron: '7,22,37,52 * * * 1-5'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cycle-expansion-daytrade-push
+  cancel-in-progress: false
+
+jobs:
+  entry-alert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PUSHOVER_APP_TOKEN: ${{ secrets.PUSHOVER_APP_TOKEN }}
+      PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
+      # Usually leave device unspecified so the registered iPhone can mirror to Apple Watch.
+      PUSHOVER_DEVICE: ${{ vars.PUSHOVER_DEVICE }}
+    steps:
+      - name: Check configuration (never print secret values)
+        id: creds
+        shell: bash
+        run: |
+          if [ -n "$PUSHOVER_APP_TOKEN" ] && [ -n "$PUSHOVER_USER_KEY" ]; then
+            echo "ready=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=no" >> "$GITHUB_OUTPUT"
+            echo "::warning::Pushover not configured. Add PUSHOVER_APP_TOKEN and PUSHOVER_USER_KEY under Settings > Secrets and variables > Actions."
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "::error::Manual test requires configured Pushover secrets."
+              exit 1
+            fi
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.creds.outputs.ready == 'yes'
+
+      - uses: actions/setup-python@v5
+        if: steps.creds.outputs.ready == 'yes'
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install analysis libraries
+        if: steps.creds.outputs.ready == 'yes'
+        run: python -m pip install 'pandas>=2.2,<3' 'numpy>=1.26,<3' 'yfinance>=0.2.50,<1' 'pytest>=8,<10'
+
+      - name: Verify notification selection logic
+        if: steps.creds.outputs.ready == 'yes'
+        run: python -m pytest -q tests/test_alerts.py tests/test_daytrade.py
+
+      - name: Restore last sent state
+        if: steps.creds.outputs.ready == 'yes' && inputs.send_test != true
+        uses: actions/cache/restore@v4
+        with:
+          path: .alert_state
+          key: daytrade-alert-state-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            daytrade-alert-state-
+
+      - name: Send connection test to Pushover
+        if: steps.creds.outputs.ready == 'yes' && inputs.send_test == true
+        run: python -m scanner.alerts --test
+
+      - name: Evaluate new 15-minute entries and notify
+        if: steps.creds.outputs.ready == 'yes' && inputs.send_test != true
+        run: |
+          if [ -f alert_watchlist.csv ]; then
+            python -m scanner.alerts --state .alert_state/state.json --universe alert_watchlist.csv
+          else
+            python -m scanner.alerts --state .alert_state/state.json
+          fi
+
+      - name: Persist alert history to avoid repeats
+        if: steps.creds.outputs.ready == 'yes' && inputs.send_test != true && success()
+        uses: actions/cache/save@v4
+        with:
+          path: .alert_state
+          key: daytrade-alert-state-${{ github.run_id }}-${{ github.run_attempt }}
