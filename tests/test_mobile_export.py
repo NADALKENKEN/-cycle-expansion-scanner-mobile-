@@ -35,3 +35,20 @@ def test_value_normalizer_rejects_nan_infinity():
     assert normalize(float('nan')) is None
     assert normalize(np.float64(np.inf)) is None
     assert normalize(np.int64(42))==42
+
+
+def test_nested_explanation_json(tmp_path):
+    asset=Asset('米国株','CHECK','CHECK')
+    signals=pd.DataFrame([{'市場':'米国株','銘柄':'CHECK','シンボル':'CHECK',
+        '期間':'短期','方向':'買い','判定':'買い準備',
+        '分析根拠':['BBエクスパンション','RSI・MACD一致'],
+        '根拠詳細':[{'name':'BBエクスパンション','detail':'前日比5%以上拡大'}],
+        '未成立条件':['価格突破/押し目'],'主な根拠':'BBエクスパンション'}])
+    frame=pd.DataFrame({'close':[120]},index=pd.date_range('2026-10-22',periods=1))
+    payload=build_payload([asset],signals,{('米国株','CHECK'):(frame,'TEST')},[])
+    row=payload['rows'][0]
+    assert row['technical_tags']==['BBエクスパンション','RSI・MACD一致']
+    assert row['technical_details'][0]['name']=='BBエクスパンション'
+    assert row['missing_checks']==['価格突破/押し目']
+    path=write_payload(payload,tmp_path/'latest.json')
+    assert json.loads(path.read_text('utf-8'))['rows'][0]['technical_tags'][0]=='BBエクスパンション'
