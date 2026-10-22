@@ -19,7 +19,9 @@ OUT = ROOT / 'site' / 'data' / 'latest.json'
 
 FIELD_MAP = {
     '市場': 'market', '銘柄': 'name', 'シンボル': 'symbol', '期間': 'horizon',
-    '方向': 'side', '判定': 'signal', 'スコア': 'score', '価格': 'price',
+    '方向': 'side', '判定': 'signal', 'スコア': 'score',
+    'エントリー適性': 'entry_score', 'エントリー判定': 'entry_state',
+    'エントリー注意': 'entry_notes', '価格': 'price',
     '基準日': 'bar_date', '参考エントリー': 'entry', '参考損切り': 'stop',
     '参考利確2R': 'target_2r', '損切幅ATR': 'risk_atr', 'ATR': 'atr',
     'RSI': 'rsi', '出来高倍率': 'volume_ratio', '相対強度20日': 'rs20',
