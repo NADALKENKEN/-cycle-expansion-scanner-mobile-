@@ -1,6 +1,6 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const state = {payload:null, horizon:'短期', side:'すべて', market:'すべて', signal:'候補', term:''};
+const state = {payload:null, horizon:'短期', side:'すべて', market:'すべて', signal:'候補', technique:'すべて', term:''};
 const esc = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const isFiniteNumber = x => typeof x === 'number' && Number.isFinite(x);
 const fmt = value => {
@@ -35,12 +35,23 @@ function card(r,charts){
     r.bb_width_rank!=null?`BB順位 ${fmt(r.bb_width_rank)}%`:null].filter(Boolean);
   const bitHtml=bits.map(b=>`<span class="metric">${esc(b)}</span>`).join('');
   const tradingRisk=(isFiniteNumber(r.price)&&isFiniteNumber(r.stop)&&r.price>0)?(Math.abs(r.price-r.stop)/r.price*100):null;
+  const evidence=Array.isArray(r.technical_details)?r.technical_details:[];
+  const names=Array.isArray(r.technical_tags)?r.technical_tags:[];
+  const labels=names.length?names:(r.passed_checks?r.passed_checks.split(' / '):[]);
+  const techBadges=labels.length?labels.map(label=>`<span class="technical-badge">✓ ${esc(label)}</span>`).join(''):'<span class="tech-none">方向別に成立したテクニカルはありません</span>';
+  const explain=evidence.map(d=>`<li><b>${esc(d.name)}</b><span>${esc(d.detail)}</span></li>`).join('');
+  const missing=Array.isArray(r.missing_checks)?r.missing_checks:[];
+  const explainHtml=(explain||missing.length)?`<details class="tech-explain"><summary>根拠と未成立条件を確認</summary>${explain?`<ul>${explain}</ul>`:''}${missing.length?`<p class="tech-missing">未成立：${missing.map(esc).join(' ／ ')}</p>`:''}</details>`:'';
   return `<article class="card ${cls}">
     <div class="head"><div><div class="labels"><span class="tag">${esc(r.market)}</span><span class="tag ${tagClass}">${esc(status)}</span></div>
     <h3 class="title">${esc(r.name)}</h3><div class="ticker">${esc(r.symbol)} &nbsp;·&nbsp; ${esc(r.horizon)}</div></div>
     <div class="score"><strong>${isFiniteNumber(r.score)?fmt(r.score):'—'}</strong><small>SIGNAL SCORE</small></div></div>
     <div class="price-row"><div><strong>${fmt(r.price)}</strong><small>参考終値（SBI約定価格ではありません）</small></div><span class="date">${esc(r.bar_date||'—')}</span></div>
     <div class="risk"><div class="risk-item stop"><small>損切り参考</small><b>${fmt(r.stop)}</b></div><div class="risk-item profit"><small>目標価格 2R</small><b>${fmt(r.target_2r)}</b></div></div>
+    <div class="technical-found"><div class="technical-title">🔎 検出したテクニカル <small>成立した条件のみ</small></div>
+      <div class="technical-badges">${techBadges}</div>
+      <p class="technical-lead">主な形状：<strong>${esc(r.main_reason||'確認中')}</strong></p>
+      ${explainHtml}</div>
     <div class="indicators">${bitHtml}</div>
     ${makeSpark(charts[assetKey],cls)}
     <div class="details">
@@ -59,6 +70,7 @@ function filterRows(){
     r.horizon===state.horizon &&
     (state.side==='すべて'||r.side===state.side) &&
     (state.market==='すべて'||r.market===state.market) &&
+    (state.technique==='すべて'||(Array.isArray(r.technical_tags)&&r.technical_tags.some(tag=>tag.includes(state.technique)))) &&
     (state.signal==='すべて'||(state.signal==='候補' && (r.signal?.includes('初動')||r.signal?.includes('準備')))||(state.signal==='初動'&&r.signal?.includes('初動'))||(state.signal==='準備'&&r.signal?.includes('準備'))) &&
     (!term||String(r.name+' '+r.symbol+' '+r.market).toLocaleLowerCase('ja-JP').includes(term))
   ).sort((a,b)=>(scoreSignal(a.signal)-scoreSignal(b.signal)) || ((b.score||0)-(a.score||0)));
@@ -117,6 +129,7 @@ document.querySelectorAll('.horizon').forEach(el=>el.addEventListener('click',()
 document.querySelectorAll('.chip').forEach(el=>el.addEventListener('click',()=>{state.side=el.dataset.side;render();}));
 $('market').addEventListener('change',e=>{state.market=e.target.value;render();});
 $('signal').addEventListener('change',e=>{state.signal=e.target.value;render();});
+$('technique').addEventListener('change',e=>{state.technique=e.target.value;render();});
 $('search').addEventListener('input',e=>{state.term=e.target.value;render();});
 $('refresh').addEventListener('click',reload);
 reload();
