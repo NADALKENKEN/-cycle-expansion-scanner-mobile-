@@ -7,6 +7,11 @@ const fmt = value => {
   if (!isFiniteNumber(value)) return '—';
   return new Intl.NumberFormat('ja-JP',{maximumFractionDigits: Math.abs(value)>=1000 ? 1 : Math.abs(value)>=1 ? 3 : 6}).format(value);
 };
+// Show precise FX/CFD reference price levels without pretending they are broker tick sizes.
+const fmtPrice = value => {
+  if (!isFiniteNumber(value)) return '—';
+  return new Intl.NumberFormat('ja-JP',{maximumFractionDigits:Math.abs(value)>=100?4:Math.abs(value)>=10?5:6}).format(value);
+};
 const displayTime = iso => {
   if(!iso)return '初回スキャン待ち';
   const d=new Date(iso);
@@ -35,6 +40,25 @@ function card(r,charts){
     r.bb_width_rank!=null?`BB順位 ${fmt(r.bb_width_rank)}%`:null].filter(Boolean);
   const bitHtml=bits.map(b=>`<span class="metric">${esc(b)}</span>`).join('');
   const tradingRisk=(isFiniteNumber(r.price)&&isFiniteNumber(r.stop)&&r.price>0)?(Math.abs(r.price-r.stop)/r.price*100):null;
+  const br=(r.breakout&&typeof r.breakout==='object')?r.breakout:null;
+  const isBuy=r.side==='買い';
+  const breakoutPanel=br&&isFiniteNumber(br.reference_price)?`
+    <section class="breakout-box" aria-label="ブレイクの時間足と価格条件">
+      <div class="breakout-heading"><strong>📍 ブレイク判定ライン</strong><span>${esc(br.timeframe||'日足（確定足）')}</span></div>
+      <p class="breakout-method">${esc(br.line_name||'直前高値・安値')} / 基準日 ${esc(br.as_of||r.bar_date||'—')}</p>
+      <div class="breakout-target"><span>${isBuy?'終値がこの価格を上回る':'終値がこの価格を下回る'}</span>
+        <strong>${esc(br.comparison|| (isBuy?'>':'<'))} ${fmtPrice(br.reference_price)}</strong></div>
+      <div class="breakout-status">${esc(br.state||'未判定')}</div>
+      ${!br.price_crossed?`<p class="breakout-distance">ラインまであと ${fmtPrice(br.remaining_price)}（参考終値から ${fmt(br.remaining_pct)}%、${fmt(br.remaining_atr)} ATR）</p>`:
+      '<p class="breakout-distance">価格ラインは通過済み。その他の成立条件を確認してください。</p>'}
+      ${br.bb_required?`<p class="breakout-bb">短期の追加条件：同じ日足の${esc(br.bb_name)}の外側で終値確定
+        <span>前回基準日のバンド参考値 ${fmtPrice(br.bb_reference)}（翌日変化）</span></p>`:
+      '<p class="breakout-bb">中期：終値による55本ライン突破が基準。EMA20への押し・戻りは別の入口です。</p>'}
+      <details class="breakout-detail"><summary>ブレイク成立の正確な条件</summary>
+        <p>${esc(br.rule||'次回のスキャンで確認')}</p>
+        <p>${esc(br.caution||'基準価格は確定足ごとに更新されます。')}</p>
+      </details>
+    </section>`:'';
   const entryValue=isFiniteNumber(r.entry_score)?r.entry_score:null;
   const entryClass=entryValue===null?'none':r.entry_state?.includes('見送り')?'avoid':r.entry_state?.includes('待ち')||r.entry_state?.includes('慎重')?'watch':'positive';
   const entryNotes=Array.isArray(r.entry_notes)?r.entry_notes:[];
@@ -56,6 +80,7 @@ function card(r,charts){
     <div class="score"><strong>${isFiniteNumber(r.score)?fmt(r.score):'—'}</strong><small>トレンド方向の条件一致度</small></div></div>
     <div class="price-row"><div><strong>${fmt(r.price)}</strong><small>参考終値（SBI約定価格ではありません）</small></div><span class="date">${esc(r.bar_date||'—')}</span></div>
     ${entryPanel}
+    ${breakoutPanel}
     <div class="risk"><div class="risk-item stop"><small>損切り参考</small><b>${fmt(r.stop)}</b></div><div class="risk-item profit"><small>目標価格 2R</small><b>${fmt(r.target_2r)}</b></div></div>
     <div class="technical-found"><div class="technical-title">🔎 検出したテクニカル <small>成立した条件のみ</small></div>
       <div class="technical-badges">${techBadges}</div>
