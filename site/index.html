@@ -18,13 +18,14 @@
   <main class="shell" id="app">
     <header class="masthead">
       <div class="brand"><span class="brand-mark">C<span>×</span>E</span><div class="brand-words"><b>CYCLE / EXPANSION</b><small>MULTI-MARKET SCANNER</small></div></div>
-      <div class="top-actions"><span class="status-pip" id="health-dot"></span><span id="health-text">読込中</span><button class="refresh" id="refresh" type="button" aria-label="公開済みの最新レポートを再読込">↻ 更新</button></div>
+      <div class="top-actions"><span class="status-pip" id="health-dot"></span><span id="health-text">読込中</span><button class="refresh" id="refresh" type="button" aria-label="公開済みレポートを再読込">↻ 再読込</button></div>
     </header>
     <section class="hero">
       <div class="eyebrow">THE MARKET SIGNAL DESK <span class="slash">/</span> v1 MOBILE</div>
       <h1>次のチャンスを、<br><em>市場横断</em>で捉える。</h1>
       <p class="hero-sub">株式・為替・CFDを同じルールで分析。短期と中期、買いとショートを独立判定。</p>
       <div class="meta-bar"><span>分析更新 <strong id="updated-at">未実行</strong></span><span>取得 <strong id="feed-count">0 / 0</strong> 商品</span><span class="source-tag">公開参考価格 / 非リアルタイム</span></div>
+      <p class="reload-help">「再読込」は公開済みデータの読み直しです。新しい市場データの分析は <a href="https://github.com/NADALKENKEN/-cycle-expansion-scanner-mobile-/actions/workflows/pages.yml" target="_blank" rel="noopener noreferrer">GitHub Actionsで実行 ↗</a>（定期更新も設定済み）。</p>
     </section>
     <section class="stats" aria-label="市場のシグナル集計">
       <div class="stat stat-long"><div class="stat-label">↗ 買い初動</div><strong id="n-buy">—</strong><div class="stat-sub">条件成立</div></div>
@@ -67,6 +68,7 @@
       <div class="rule"><b>表示の見方</b><p>各銘柄の「検出したテクニカル」は当該売買方向で成立した条件です。「根拠と未成立条件」を開くと数値・判定理由を確認できます。テクニカルが効くことや将来の勝率を証明するものではありません。</p></div>
       <div class="rule"><b>短期</b><p>日足20日ブレイク・EMA20/50・BB拡大・RSI/MACD・株式出来高を中心に評価。</p></div>
       <div class="rule"><b>中期</b><p>日足55日ブレイクまたは押し目・EMA50/200・週足トレンドを中心に評価。</p></div>
+      <div class="rule"><b>2つの評価</b><p>「トレンド方向の条件一致度」は従来の複合シグナル点（100点満点）。「エントリー適性」は損切り幅（ATR・対価格比）、EMA20からの乖離、RSIの過熱、ブレイク後の追随距離などを加減点した別の参考点です。勝率・期待利益ではありません。</p></div>
       <div class="rule"><b>損切り・利確</b><p>参考損切りは直近の高安とATRから試算。2R目標は損失幅の2倍。実際の逆指値価格ではありません。</p></div>
       <p class="caution">※ 本画面は投資判断を補助する参考スクリーニングです。推奨・保証・自動発注ではありません。FX・CFDの参照価格はSBIの提示Bid/Ask、取扱限月、スプレッド、スワップ、調整額と異なります。実際の発注前にSBIで銘柄・数量・証拠金・価格をご確認ください。分析結果と株式の出来高・FXの取引量は別物です。</p>
     </section>
