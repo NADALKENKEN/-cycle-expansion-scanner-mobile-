@@ -154,3 +154,33 @@ def test_explanations_do_not_claim_broker_volume():
     x['Volume']=0
     rows=scan_asset(Asset('SBI FX','米ドル/円','USDJPY=X'),x,'短期')
     assert all('株式出来高条件' not in r['分析根拠'] for r in rows)
+
+
+def test_scanner_breakout_reference_matches_actual_daily_bars():
+    x=prices()
+    asset=Asset('SBI FX','米ドル/円','USDJPY=X')
+    short=scan_asset(asset,x,'短期')
+    med=scan_asset(asset,x,'中期')
+    buy=next(r for r in short if r['方向']=='買い')
+    sell=next(r for r in med if r['方向']=='ショート')
+    shortline=add_indicators(x).iloc[-1]['high20']
+    mediumline=add_indicators(x).iloc[-1]['low55']
+    assert buy['ブレイク基準情報']['reference_price']==shortline
+    assert buy['ブレイク基準情報']['lookback_bars']==20
+    assert buy['ブレイク基準情報']['timeframe']=='日足（確定足）'
+    assert sell['ブレイク基準情報']['reference_price']==mediumline
+    assert sell['ブレイク基準情報']['lookback_bars']==55
+    assert sell['ブレイク基準情報']['comparison']=='<'
+
+
+def test_partial_price_break_does_not_claim_full_short_term_signal():
+    x=prices()
+    asset=Asset('日本株','TEST','TEST.T')
+    rows=scan_asset(asset,x,'短期')
+    for r in rows:
+        b=r['ブレイク基準情報']
+        assert b['complete']==bool(
+            r['価格']>b['reference_price'] and r['価格']>b['bb_reference']
+            if r['方向']=='買い' else
+            r['価格']<b['reference_price'] and r['価格']<b['bb_reference']
+        )
