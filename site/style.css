@@ -48,3 +48,6 @@
   .top-actions #health-text{font-size:10px;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis}
   .refresh{position:relative;z-index:6;touch-action:manipulation;min-width:78px;min-height:44px;margin-left:2px;padding:10px 9px;font-size:12px}
 }
+
+.hero-refresh{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:11px 18px;margin-top:17px;background:#234059;border:1px solid #5e8ba7;border-radius:10px;color:#e4f5ff;font-size:13px;font-weight:800;touch-action:manipulation}
+.hero-refresh:disabled{opacity:.65;cursor:progress}
