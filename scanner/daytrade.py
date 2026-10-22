@@ -105,7 +105,7 @@ def scan_day_asset(asset, frame, now=None, feed="Yahoo 15分足参考"):
         dist=(line-price)/atr_now if buy else (price-line)/atr_now
         near=0<=dist<=0.6
         vol_ok=asset.market not in ("日本株","米国株") or (vr is not None and vr>=1.25)
-        vwap_ok=vwap is None or (price>vwap if buy else price<vwap)
+        vwap_ok=((price>vwap if buy else price<vwap) if vwap is not None else False) if asset.market in ("日本株","米国株") else True
         checks=[
             ("15分足EMA9/21方向一致",trend,27),
             ("直前12本の高安突破",hit,27),
@@ -114,8 +114,7 @@ def scan_day_asset(asset, frame, now=None, feed="Yahoo 15分足参考"):
         ]
         if asset.market in ("日本株","米国株"):
             checks += [("株式15分出来高1.25倍",bool(vol_ok),13)]
-            if vwap is not None:
-                checks += [("当日VWAP方向一致",bool(vwap_ok),11)]
+            checks += [("当日VWAP方向一致",bool(vwap_ok),11)]
         score=round(100*sum(w for _,ok,w in checks if ok)/sum(w for _,ok,w in checks))
         confirmed=bool(fresh and trend and mom and hit and vol_ok and vwap_ok and score>=65)
         ready=bool(fresh and trend and mom and near and vol_ok and score>=55)
