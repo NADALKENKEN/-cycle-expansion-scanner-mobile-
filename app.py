@@ -86,7 +86,7 @@ def render_period(period):
         st.info('現在の絞り込み条件では候補がありません。閾値を下げるか、別の日のデータを確認してください。')
         return
     d['テクニカル根拠']=d['分析根拠'].apply(lambda v: ' / '.join(v) if isinstance(v,list) else '') if '分析根拠' in d.columns else ''
-    show=['市場','銘柄','方向','判定','主な根拠','テクニカル根拠','スコア','価格','基準日','参考損切り','参考利確2R','損切幅ATR','RSI','出来高倍率','相対強度20日','完了サイクル','ワイコフ類似','データ']
+    show=['市場','銘柄','方向','判定','主な根拠','テクニカル根拠','スコア','エントリー適性','エントリー判定','価格','基準日','参考損切り','参考利確2R','損切幅ATR','RSI','出来高倍率','相対強度20日','完了サイクル','ワイコフ類似','データ']
     if '4時間足' in d.columns:show.insert(5,'4時間足')
     st.dataframe(d[show],use_container_width=True,hide_index=True,height=450)
     csv=d.to_csv(index=False).encode('utf-8-sig')
@@ -96,6 +96,9 @@ def render_period(period):
     r=d.iloc[selection]
     st.write(f"**{r['銘柄']}**　{r['判定']} / スコア {r['スコア']}（勝率ではありません）")
     st.caption(f"主な形状: {r.get('主な根拠','—')} ／ 成立条件: {r['検証条件']} ／ データ: {r['データ']} ／ 基準日: {r['基準日']}")
+    st.info(f"エントリー適性: {r.get('エントリー適性','—')}/100 ／ {r.get('エントリー判定','評価待ち')}")
+    cautions=r.get('エントリー注意',[])
+    if isinstance(cautions,list) and cautions: st.caption('判断材料: '+' / '.join(cautions))
     details=r.get('根拠詳細',[])
     if isinstance(details,list):
         with st.expander('🔎 検出したテクニカルと根拠・未成立条件',expanded=False):
