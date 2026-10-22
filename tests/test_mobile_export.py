@@ -74,3 +74,22 @@ def test_mobile_report_includes_entry_suitability(tmp_path):
     after=json.loads(path.read_text(encoding='utf-8'))['rows'][0]
     assert after['entry_score']==33
     assert after['entry_notes']==row['entry_notes']
+
+
+def test_mobile_json_includes_daily_breakout_line():
+    from scanner.breakout import breakout_reference
+    ref=breakout_reference(period='短期',side='買い',close=97.75,
+        high_line=100,low_line=93,bb_upper=99.0,bb_lower=94,
+        atr=2.5,bar_date='2026-10-21')
+    signals=pd.DataFrame([{'市場':'日本株','銘柄':'CHECK','シンボル':'1234.T',
+        '期間':'短期','方向':'買い','判定':'買い準備',
+        'スコア':78,'エントリー判定':'ブレイク待ち',
+        'ブレイク基準情報':ref}])
+    a=Asset('日本株','CHECK','1234.T')
+    frame=pd.DataFrame({'close':[97.75]},index=pd.date_range('2026-10-21',periods=1))
+    out=build_payload([a],signals,{('日本株','CHECK'):(frame,'TEST')},[])
+    row=out['rows'][0]
+    assert row['breakout']['timeframe']=='日足（確定足）'
+    assert row['breakout']['reference_price']==100
+    assert row['breakout']['remaining_price']==2.25
+    assert row['breakout']['bb_required'] is True
