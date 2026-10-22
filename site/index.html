@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="株・FX・CFDの短期・中期トレンドを比較できる独立型スキャナー。価格は公開市場の参考値です。">
+  <meta name="description" content="株・FX・CFDのデイトレ・短期・中期トレンドを比較できる独立型スキャナー。価格は公開市場の参考値です。">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="市場スキャナー">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./style.css?v=3.0">
+  <link rel="stylesheet" href="./style.css?v=4.0">
   <title>Cycle × Expansion | 独立マルチ市場スキャナー</title>
 </head>
 <body>
@@ -21,9 +21,9 @@
       <div class="top-actions"><span class="status-pip" id="health-dot"></span><span id="health-text">読込中</span><button class="refresh" id="refresh" type="button" aria-label="公開済みレポートを再読込">↻ 再読込</button></div>
     </header>
     <section class="hero">
-      <div class="eyebrow">THE MARKET SIGNAL DESK <span class="slash">/</span> v3 MOBILE</div>
+      <div class="eyebrow">THE MARKET SIGNAL DESK <span class="slash">/</span> v4 MOBILE</div>
       <h1>次のチャンスを、<br><em>市場横断</em>で捉える。</h1>
-      <p class="hero-sub">株式・為替・CFDを同じルールで分析。短期と中期、買いとショートを独立判定。</p>
+      <p class="hero-sub">株式・為替・CFDをデイトレ／短期／中期で独立判定。15分足は遅延参考データであり、リアルタイム売買には対応していません。</p>
       <div class="meta-bar"><span>分析更新 <strong id="updated-at">未実行</strong></span><span>取得 <strong id="feed-count">0 / 0</strong> 商品</span><span class="source-tag">公開参考価格 / 非リアルタイム</span></div>
       <button class="hero-refresh" id="refresh-main" type="button">↻ 表示データを再読込</button>
       <p class="reload-help">「再読込」は公開済みデータの読み直しです。新しい市場データの分析は <a href="https://github.com/NADALKENKEN/-cycle-expansion-scanner-mobile-/actions/workflows/pages.yml" target="_blank" rel="noopener noreferrer">GitHub Actionsで実行 ↗</a>（定期更新も設定済み）。</p>
@@ -35,6 +35,7 @@
       <div class="stat"><div class="stat-label">◈ 評価件数</div><strong id="n-rows">—</strong><div class="stat-sub">期間・売買方向別</div></div>
     </section>
     <section class="selector" aria-label="保有期間を選択">
+      <button id="h-day" type="button" class="horizon" data-horizon="デイトレ"><span class="tab-symbol">◷</span><span><b>デイトレ</b><small>15分足 / 当日中</small></span></button>
       <button id="h-short" type="button" class="horizon active" data-horizon="短期"><span class="tab-symbol">↯</span><span><b>短期トレード</b><small>3〜10営業日 / 初動・急変</small></span></button>
       <button id="h-medium" type="button" class="horizon" data-horizon="中期"><span class="tab-symbol">⌁</span><span><b>中期トレード</b><small>2週間〜3か月 / トレンド継続</small></span></button>
     </section>
@@ -67,6 +68,7 @@
     <section class="technical-note">
       <h3>判定基準 <span>RULEBOOK</span></h3>
       <div class="rule"><b>表示の見方</b><p>各銘柄の「検出したテクニカル」は当該売買方向で成立した条件です。「根拠と未成立条件」を開くと数値・判定理由を確認できます。テクニカルが効くことや将来の勝率を証明するものではありません。</p></div>
+      <div class="rule"><b>デイトレ</b><p>15分足の直前12本（約3取引時間）の高値・安値を確定足で突破。EMA9/21、RSI14、BB拡大、株式なら出来高と当日VWAPを加えて確認。古い足は「参考のみ」として初動候補から除外。</p></div>
       <div class="rule"><b>短期</b><p>確定日足の直前20本高値/安値を終値で突破し、同じ日足でBB±2σの外側に確定することが基準。EMA20/50、RSI/MACD、株式出来高も評価。</p></div>
       <div class="rule"><b>中期</b><p>確定日足の直前55本高値/安値を終値で突破、またはEMA20の押し目・戻りを別判定。EMA50/200と確定週足の方向も評価。</p></div>
       <div class="rule"><b>2つの評価</b><p>「トレンド方向の条件一致度」は従来の複合シグナル点（100点満点）。「エントリー適性」は損切り幅（ATR・対価格比）、EMA20からの乖離、RSIの過熱、ブレイク後の追随距離などを加減点した別の参考点です。勝率・期待利益ではありません。</p></div>
@@ -75,6 +77,6 @@
     </section>
     <footer><strong>C × E</strong> <span>Independent scanner • No connection to existing software</span><span>更新はGitHub Actionsで実行</span></footer>
   </main>
-  <script defer src="./app.js?v=3.0"></script>
+  <script defer src="./app.js?v=4.0"></script>
 </body>
 </html>
