@@ -23,7 +23,8 @@ on:
 
 concurrency:
   group: mobile-scanner-pages
-  cancel-in-progress: false
+  # Prefer the newest public snapshot when frequent scans overlap.
+  cancel-in-progress: true
 
 permissions:
   contents: read
