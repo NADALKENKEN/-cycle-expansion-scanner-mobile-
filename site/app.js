@@ -32,7 +32,7 @@ function card(r,charts){
   const status=String(r.signal||'様子見');
   const cls=classify(r.side);
   const tagClass=status.includes('初動')?cls:status.includes('準備')?'ready':'';
-  const assetKey=`${r.market}::${r.name}`;
+  const assetKey=`${r.market}::${r.name}${r.horizon==='デイトレ'?'::デイトレ':''}`;
   const bits = [r.rsi!=null?`RSI ${fmt(r.rsi)}`:null,
     r.volume_ratio!=null?`株出来高 ${fmt(r.volume_ratio)}×`:null,
     r.rs20!=null?`RS20 ${fmt(r.rs20)}pt`:null,
@@ -53,6 +53,8 @@ function card(r,charts){
       '<p class="breakout-distance">価格ラインは通過済み。その他の成立条件を確認してください。</p>'}
       ${br.bb_required?`<p class="breakout-bb">短期の追加条件：同じ日足の${esc(br.bb_name)}の外側で終値確定
         <span>前回基準日のバンド参考値 ${fmtPrice(br.bb_reference)}（翌日変化）</span></p>`:
+      r.horizon==='デイトレ'?
+      '<p class="breakout-bb">デイトレ：15分足の直前12本の高安突破。EMA9/21・RSI・株式出来高・VWAPは別途判定。遅延データである点に注意。</p>':
       '<p class="breakout-bb">中期：終値による55本ライン突破が基準。EMA20への押し・戻りは別の入口です。</p>'}
       <details class="breakout-detail"><summary>ブレイク成立の正確な条件</summary>
         <p>${esc(br.rule||'次回のスキャンで確認')}</p>
@@ -120,12 +122,26 @@ function render(){
   $('n-ready').textContent=count(r=>r.signal==='買い準備'||r.signal==='ショート準備');
   $('n-rows').textContent=rows.length;
   $('updated-at').textContent=displayTime(p.meta?.generated_at);
-  $('feed-count').textContent=`${p.meta?.assets_analyzed ?? 0} / ${p.meta?.assets_enabled ?? 0}`;
+  $('feed-count').textContent=state.horizon==='デイトレ'?
+    `${p.meta?.intraday_analyzed ?? 0} / ${p.meta?.intraday_enabled ?? p.meta?.assets_enabled ?? 0}`:
+    `${p.meta?.assets_analyzed ?? 0} / ${p.meta?.assets_enabled ?? 0}`;
   document.querySelectorAll('.horizon').forEach(el=>{const active=el.dataset.horizon===state.horizon;el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));});
   document.querySelectorAll('.chip').forEach(el=>{const active=el.dataset.side===state.side;el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));});
   const filtered=filterRows();
   $('filtered-count').textContent=filtered.length+'件';
   $('results').innerHTML=filtered.length?filtered.slice(0,400).map(r=>card(r,p.charts||{})).join(''):`<div class="empty"><b>該当する銘柄はありません</b><p>${p.meta?.generated_at?'絞り込み条件を変更するか、次回の更新を確認してください。':'初回の分析実行前です。GitHub Actions でスキャンを実行してください。'}</p></div>`;
+  if(state.horizon==='デイトレ'){
+    const frames=p.meta?.intraday_analyzed ?? 0;
+    const fresh=rows.filter(r=>r.signal?.includes('初動')||r.signal?.includes('準備')).length;
+    if(!p.meta?.generated_at||frames===0){
+      $('health-dot').className='status-pip bad';$('health-text').textContent='15分足未取得';
+      banner('デイトレ用の15分足データを取得できていません。GitHub Actionsの実行状態をご確認ください。','error');
+    }else{
+      $('health-dot').className='status-pip warn';$('health-text').textContent='15分足参考';
+      banner(`15分足取得 ${frames}商品・売買条件候補 ${fresh}件。情報は遅延した参考値です。最後の確定足が古い市場は候補に含めず、発注はSBIの取引画面で確認してください。`,'info');
+    }
+    return;
+  }
   const age=safeDaysOld(p.meta?.generated_at);
   const feeds=p.meta?.assets_analyzed||0;
   if(!p.meta?.generated_at){
