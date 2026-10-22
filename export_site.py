@@ -31,6 +31,7 @@ FIELD_MAP = {
     '週足方向': 'weekly_trend', '検証条件': 'passed_checks',
     '主な根拠': 'main_reason', '分析根拠': 'technical_tags',
     '根拠詳細': 'technical_details', '未成立条件': 'missing_checks',
+    'ブレイク基準情報': 'breakout',
     'データ': 'feed', '注意': 'note',
 }
 
