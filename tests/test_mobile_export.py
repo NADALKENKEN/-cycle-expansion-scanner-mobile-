@@ -52,3 +52,25 @@ def test_nested_explanation_json(tmp_path):
     assert row['missing_checks']==['価格突破/押し目']
     path=write_payload(payload,tmp_path/'latest.json')
     assert json.loads(path.read_text('utf-8'))['rows'][0]['technical_tags'][0]=='BBエクスパンション'
+
+
+def test_mobile_report_includes_entry_suitability(tmp_path):
+    asset=Asset('SBI CFD','小麦','ZW=F')
+    signals=pd.DataFrame([{
+        '市場':'SBI CFD','銘柄':'小麦','シンボル':'ZW=F',
+        '期間':'短期','方向':'ショート','判定':'ショート初動',
+        'スコア':100,'エントリー適性':33,
+        'エントリー判定':'見送り（追いかけ注意）',
+        'エントリー注意':['損切りが 4.73 ATR と非常に大きい。'],
+    }])
+    frame=pd.DataFrame({'close':[628.25]},index=pd.date_range('2026-10-21',periods=1))
+    payload=build_payload([asset],signals,{('SBI CFD','小麦'):(frame,'TEST')},[])
+    row=payload['rows'][0]
+    assert row['score']==100
+    assert row['entry_score']==33
+    assert row['entry_state']=='見送り（追いかけ注意）'
+    assert '4.73 ATR' in row['entry_notes'][0]
+    path=write_payload(payload,tmp_path/'latest.json')
+    after=json.loads(path.read_text(encoding='utf-8'))['rows'][0]
+    assert after['entry_score']==33
+    assert after['entry_notes']==row['entry_notes']
