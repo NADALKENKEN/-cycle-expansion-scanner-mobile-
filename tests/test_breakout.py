@@ -37,7 +37,7 @@ def test_short_buy_breakout_requires_both_conditions():
 
 
 def test_short_term_sell_uses_low_and_lower_band():
-    r=scan_ref(side="ショート",close=89,bb_lower=88.5)
+    r=scan_ref(side="ショート",close=89,bb_lower=89.5)
     assert r["comparison"]=="<"
     assert r["reference_price"]==90
     assert r["complete"]
