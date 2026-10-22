@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-title" content="市場スキャナー">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./style.css?v=4.1">
+  <link rel="stylesheet" href="./style.css?v=4.2">
   <title>Cycle × Expansion | 独立マルチ市場スキャナー</title>
 </head>
 <body>
@@ -26,6 +26,7 @@
       <p class="hero-sub">株式・為替・CFDをデイトレ／短期／中期で独立判定。15分足は遅延参考データであり、リアルタイム売買には対応していません。</p>
       <div class="meta-bar"><span>分析更新 <strong id="updated-at">未実行</strong></span><span>取得 <strong id="feed-count">0 / 0</strong> 商品</span><span class="source-tag">公開参考価格 / 非リアルタイム</span></div>
       <button class="hero-refresh" id="refresh-main" type="button">↻ 表示データを再読込</button>
+      <p class="alert-help">🔔 デイトレ初動通知：Pushover経由でiPhone／Apple Watchへ配信する設定を追加しました。<a href="https://github.com/NADALKENKEN/-cycle-expansion-scanner-mobile-/blob/main/NOTIFICATIONS.md" target="_blank" rel="noopener noreferrer">通知を有効にする手順 ↗</a>（GitHub Secretsの設定が必要）</p>
       <p class="reload-help">「再読込」は公開済みデータの読み直しです。新しい市場データの分析は <a href="https://github.com/NADALKENKEN/-cycle-expansion-scanner-mobile-/actions/workflows/pages.yml" target="_blank" rel="noopener noreferrer">GitHub Actionsで実行 ↗</a>（定期更新も設定済み）。</p>
     </section>
     <section class="stats" aria-label="市場のシグナル集計">
@@ -77,6 +78,6 @@
     </section>
     <footer><strong>C × E</strong> <span>Independent scanner • No connection to existing software</span><span>更新はGitHub Actionsで実行</span></footer>
   </main>
-  <script defer src="./app.js?v=4.1"></script>
+  <script defer src="./app.js?v=4.2"></script>
 </body>
 </html>
