@@ -27,6 +27,8 @@ FIELD_MAP = {
     'サイクル高値位置パーセント': 'cycle_peak_pct', 'ワイコフ類似': 'wyckoff_proxy',
     '上値突破基準': 'upper_break', '下値割れ基準': 'lower_break',
     '週足方向': 'weekly_trend', '検証条件': 'passed_checks',
+    '主な根拠': 'main_reason', '分析根拠': 'technical_tags',
+    '根拠詳細': 'technical_details', '未成立条件': 'missing_checks',
     'データ': 'feed', '注意': 'note',
 }
 
@@ -34,6 +36,8 @@ FIELD_MAP = {
 def normalize(v):
     """Produce strict JSON, converting non-finite pandas/numpy values to null."""
     if v is None: return None
+    if isinstance(v, (list, tuple)): return [normalize(item) for item in v]
+    if isinstance(v, dict): return {str(k): normalize(item) for k, item in v.items()}
     if hasattr(v, 'item'): return normalize(v.item())
     if isinstance(v, float) and not math.isfinite(v): return None
     if isinstance(v, (str, int, float, bool)): return v
