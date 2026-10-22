@@ -131,3 +131,26 @@ def test_output_includes_cycle_and_wyckoff_proxy():
     for r in rows:
         assert r['完了サイクル'] in ('ライト傾向','レフト傾向','中立','判定不足')
         assert r['ワイコフ類似'] in ('蓄積候補の上放れ','分配候補の下放れ','未検出')
+
+
+def test_explanations_expansion_breakout_and_direction():
+    x=prices()
+    x.iloc[-1,x.columns.get_loc('Close')]=x.Close.iloc[-2]+2.2
+    x.iloc[-1,x.columns.get_loc('High')]=x.Close.iloc[-1]+.5
+    x.iloc[-1,x.columns.get_loc('Volume')]=3_500_000
+    rows=scan_asset(Asset('日本株','TEST','TEST.T'),x,'短期')
+    buy=next(r for r in rows if r['方向']=='買い')
+    sell=next(r for r in rows if r['方向']=='ショート')
+    assert '高値ブレイク' in buy['分析根拠']
+    assert '高値ブレイク' not in sell['分析根拠']
+    assert buy['主な根拠']=='高値ブレイク'
+    assert 'BBエクスパンション' in buy['分析根拠']
+    assert all(isinstance(v,dict) and v['name'] and v['detail'] for v in buy['根拠詳細'])
+    assert isinstance(buy['未成立条件'],list)
+
+
+def test_explanations_do_not_claim_broker_volume():
+    x=prices()
+    x['Volume']=0
+    rows=scan_asset(Asset('SBI FX','米ドル/円','USDJPY=X'),x,'短期')
+    assert all('株式出来高条件' not in r['分析根拠'] for r in rows)
