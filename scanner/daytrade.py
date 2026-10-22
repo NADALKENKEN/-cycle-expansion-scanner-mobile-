@@ -192,7 +192,7 @@ def scan_day_asset(asset, frame, now=None, feed="Yahoo 15分足参考"):
 
 
 def load_day_prices(assets, now=None, batch_size=18):
-    """10-day intraday public feed, UTC-indexed; only fresh bars yield candidates."""
+    """1-month public intraday history, UTC-indexed; fresh bars only for active candidates."""
     import yfinance as yf
     now=pd.Timestamp(now or datetime.now(timezone.utc))
     data={}; errors=[]
@@ -201,7 +201,7 @@ def load_day_prices(assets, now=None, batch_size=18):
     for i in range(0,len(requested),batch_size):
         batch=requested[i:i+batch_size]
         try:
-            raw=yf.download(tickers=batch,period="10d",interval="15m",group_by="ticker",
+            raw=yf.download(tickers=batch,period="1mo",interval="15m",group_by="ticker",
                 auto_adjust=True,prepost=False,progress=False,threads=False,timeout=15)
             for sym in batch:
                 try:
