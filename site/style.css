@@ -81,3 +81,5 @@
  .horizon small{font-size:9px;line-height:1.5;margin-top:4px}
 }
 @media(max-width:380px){.horizon b{font-size:11px}.horizon small{font-size:8px}}
+
+.alert-help{font-size:11px;line-height:1.8;color:#bce7da;margin:12px 0 4px;padding:10px 12px;border:1px solid #356758;border-radius:9px;background:#122e2b}.alert-help a{color:#86e4cf;text-decoration:underline;text-underline-offset:3px}
