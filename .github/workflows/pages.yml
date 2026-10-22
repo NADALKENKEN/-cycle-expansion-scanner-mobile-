@@ -17,6 +17,9 @@ on:
     # GitHub may delay or skip scheduled jobs during congestion.
     - cron: '35 22 * * 0-4'
     - cron: '35 12 * * 1-5'
+    # Intraday reference scans during Japan/US sessions and selected FX hours.
+    # Cron is best-effort; Pages is not a real-time trading feed.
+    - cron: '15 0-6,8,10,12-21 * * 1-5'
 
 concurrency:
   group: mobile-scanner-pages
@@ -39,7 +42,7 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Verify calculation code
         run: python -m pytest -q
-      - name: Fetch prices and calculate short/medium signals
+      - name: Fetch reference prices and calculate day/short/medium signals
         run: |
           if [ -f universe.csv ]; then
             python export_site.py --universe universe.csv
