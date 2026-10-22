@@ -6,6 +6,7 @@ import argparse
 import json
 import math
 import os
+import pandas as pd
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -13,6 +14,7 @@ from zoneinfo import ZoneInfo
 from scanner.data import load_ohlcv
 from scanner.engine import scan_universe
 from scanner.universe import built_in, merge_user_csv
+from scanner.daytrade import load_day_prices, scan_day_universe
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / 'site' / 'data' / 'latest.json'
@@ -99,9 +101,25 @@ def main():
     print(f'Scanning {len(assets)} instruments for short + medium mobile report')
     feeds, indexes, download_problems = load_ohlcv(assets)
     signals, analysis_problems = scan_universe(assets, feeds, indexes, ('短期','中期'))
-    payload = build_payload(assets, signals, feeds, download_problems + analysis_problems)
+    # Separate 15-minute scan: never reuse daily candles for intraday levels.
+    intraday, intraday_problems = load_day_prices(assets)
+    day_signals, day_problems = scan_day_universe(assets, intraday)
+    if not day_signals.empty:
+        signals = pd.concat([signals, day_signals], ignore_index=True)
+    all_problems = download_problems + analysis_problems + intraday_problems + day_problems
+    payload = build_payload(assets, signals, feeds, all_problems)
+    for (market, name), (frame, _) in intraday.items():
+        if len(frame):
+            recent=frame['close'].tail(60)
+            payload['charts'][f"{market}::{name}::デイトレ"] = {
+                'dates':[v.tz_convert('Asia/Tokyo').strftime('%m/%d %H:%M') for v in recent.index],
+                'values':[normalize(float(v)) for v in recent.values]
+            }
+    payload['meta']['intraday_analyzed']=len(intraday)
+    payload['meta']['intraday_enabled']=len(assets)
+    payload['meta']['intraday_timeframe']='確定済み15分足（公表参考レート）'
     out = write_payload(payload)
-    print(f'Exported {len(payload["rows"])} evaluations from {len(feeds)}/{len(assets)} instruments into {out}')
+    print(f'Exported {len(payload["rows"])} evaluations from {len(feeds)}/{len(assets)} daily, {len(intraday)}/{len(assets)} intraday instruments into {out}')
     print(f'Warnings: {payload["meta"]["issue_count"]}')
     if len(feeds) == 0:
         # Deployment still publishes an explicit "no usable data" state, not false signals.
