@@ -122,10 +122,12 @@ function render(){
 let refreshTextTimer=null;
 async function reload(){
   const button=$('refresh');
+  const secondary=$('refresh-main');
   if(button.disabled)return;
   if(refreshTextTimer!==null){clearTimeout(refreshTextTimer);refreshTextTimer=null;}
   button.disabled=true;
   button.textContent='⟳ 読込中';
+  if(secondary){secondary.disabled=true;secondary.textContent='⟳ 読込中';}
   $('health-text').textContent='読込中';
   let success=false;
   try{
@@ -137,14 +139,21 @@ async function reload(){
     render();
     success=true;
     button.textContent='✓ 読込完了';
+    if(secondary)secondary.textContent='✓ 読込完了';
   }catch(err){
     $('health-dot').className='status-pip bad';$('health-text').textContent='読込失敗';
     banner('レポートを読み込めませんでした。ネットワーク接続とGitHub Pages公開設定を確認してください（'+String(err.message).slice(0,80)+'）。','error');
     $('results').innerHTML='<div class="empty"><b>公開済みのデータを取得できません</b><p>ブラウザを再読込してください。</p></div>';
     button.textContent='再試行';
+    if(secondary)secondary.textContent='↻ 再試行';
   }finally{
     button.disabled=false;
-    if(success)refreshTextTimer=setTimeout(()=>{button.textContent='↻ 再読込';refreshTextTimer=null;},2500);
+    if(secondary)secondary.disabled=false;
+    if(success)refreshTextTimer=setTimeout(()=>{
+      button.textContent='↻ 再読込';
+      if(secondary)secondary.textContent='↻ 表示データを再読込';
+      refreshTextTimer=null;
+    },2500);
   }
 }
 
@@ -155,4 +164,5 @@ $('signal').addEventListener('change',e=>{state.signal=e.target.value;render();}
 $('technique').addEventListener('change',e=>{state.technique=e.target.value;render();});
 $('search').addEventListener('input',e=>{state.term=e.target.value;render();});
 $('refresh').addEventListener('click',reload);
+$('refresh-main').addEventListener('click',reload);
 reload();
