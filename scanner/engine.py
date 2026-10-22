@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from scanner.indicators import add_indicators, weekly_trend, completed_cycle_translation
 from scanner.entry import assess_entry
+from scanner.breakout import breakout_reference
 
 CONFIG={
  '短期':dict(lookback=20,near_atr=0.65,trigger_score=68,ready_score=55),
@@ -137,6 +138,11 @@ def scan_asset(asset,frame,period='短期',benchmark=None,feed='Yahoo参考'):
             ema20=numerical(a['ema20']), atr=atr, rsi=numerical(a['rsi']),
             breakout_level=hi if side=='買い' else lo,
         )
+        breakout = breakout_reference(
+            period=period, side=side, close=c, high_line=hi, low_line=lo,
+            bb_upper=numerical(a['bb_up']), bb_lower=numerical(a['bb_lo']),
+            atr=atr, bar_date=pd.Timestamp(d.index[-1]).date(),
+        )
         candidates.append(dict(
             市場=asset.market,銘柄=asset.name,シンボル=asset.symbol,期間=period,方向=side,判定=status,
             スコア=score,エントリー適性=entry_score,エントリー判定=entry_state,
@@ -149,7 +155,7 @@ def scan_asset(asset,frame,period='短期',benchmark=None,feed='Yahoo参考'):
             上値突破基準=hi,下値割れ基準=lo,週足方向=('上' if wlong else '下' if wshort else '中立') if med else '-',
             検証条件=' / '.join(name for name,ok,_ in checks if ok),
             主な根拠=headline,分析根拠=technical_names,根拠詳細=technical,
-            未成立条件=missing_checks,データ=feed,
+            未成立条件=missing_checks,ブレイク基準情報=breakout,データ=feed,
             注意=(asset.note or ('Yahooの参考価格。SBI約定価格ではありません' if asset.market.startswith('SBI') else '')) + (' ／ RSI過熱注意' if (numerical(a['rsi'])>=85 if side=='買い' else numerical(a['rsi'])<=15) else ''),
         ))
     return candidates
