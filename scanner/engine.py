@@ -3,6 +3,7 @@ from datetime import datetime,timezone
 import numpy as np
 import pandas as pd
 from scanner.indicators import add_indicators, weekly_trend, completed_cycle_translation
+from scanner.entry import assess_entry
 
 CONFIG={
  '短期':dict(lookback=20,near_atr=0.65,trigger_score=68,ready_score=55),
@@ -129,9 +130,17 @@ def scan_asset(asset,frame,period='短期',benchmark=None,feed='Yahoo参考'):
         risk=abs(c-stop);risk_atr=risk/atr
         if target<=0 or risk_atr>5:
             if status!='様子見':status='要確認（損切幅過大）'
+        entry_score, entry_state, entry_notes = assess_entry(
+            side=side, trend=bool(trend), momentum=bool(mom),
+            confirmed=confirmed, ready=ready, hit=bool(hit), pull=bool(pull),
+            expansion=bool(expansion), risk_atr=risk_atr, price=c, stop=stop,
+            ema20=numerical(a['ema20']), atr=atr, rsi=numerical(a['rsi']),
+            breakout_level=hi if side=='買い' else lo,
+        )
         candidates.append(dict(
             市場=asset.market,銘柄=asset.name,シンボル=asset.symbol,期間=period,方向=side,判定=status,
-            スコア=score,価格=c,基準日=str(pd.Timestamp(d.index[-1]).date()),
+            スコア=score,エントリー適性=entry_score,エントリー判定=entry_state,
+            エントリー注意=entry_notes,価格=c,基準日=str(pd.Timestamp(d.index[-1]).date()),
             参考エントリー=c,参考損切り=stop,参考利確2R=target,損切幅ATR=round(risk_atr,2),
             ATR=atr,RSI=round(numerical(a['rsi']),1),出来高倍率=round(vratio,2) if vratio is not None else None,
             相対強度20日=round(rs,2) if rs is not None else None,BB幅パーセンタイル=round(pct,1),
