@@ -16,3 +16,35 @@
 .tech-explain li{padding:8px 0;border-bottom:1px solid #31506a;display:flex;flex-direction:column;gap:4px;font-size:11px;line-height:1.65}
 .tech-explain li b{color:#f2f8ff}.tech-explain li span{color:#afc4da}
 .tech-missing{font-size:11px;color:#e5bc9e;line-height:1.9;margin:8px 0 0}
+
+/* iPhone safe area and independent entry assessment */
+.entry-panel{margin-top:14px;padding:13px 14px;background:#132234;border:1px solid #34506b;border-radius:12px}
+.entry-header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.entry-header>span{color:#cae6fa;font-weight:800;font-size:13px}
+.entry-header span small{font-size:10px;display:block;font-weight:500;margin-top:4px;color:#9db7ce}
+.entry-header strong{font-size:27px;line-height:1;color:#f4faff}
+.entry-header strong small{font-size:11px;color:#a6bcd0;padding-left:2px}
+.entry-state{font-size:12px;font-weight:800;margin:9px 0 6px;color:#eaf5ff}
+.entry-explain{font-size:11px;line-height:1.75;color:#a9c1d6;margin:0;overflow-wrap:anywhere}
+.entry-panel.positive{border-color:#2c806b;background:#12342d}
+.entry-panel.positive .entry-header strong,.entry-panel.positive .entry-state{color:#72e4bd}
+.entry-panel.watch{border-color:#74613c;background:#28251b}
+.entry-panel.watch .entry-header strong,.entry-panel.watch .entry-state{color:#f1cd8c}
+.entry-panel.avoid{border-color:#805258;background:#2b222b}
+.entry-panel.avoid .entry-header strong,.entry-panel.avoid .entry-state{color:#ff9da3}
+.reload-help{font-size:11px;line-height:1.75;color:#a9c1d6;margin-top:12px}
+.reload-help a{color:#85d6f5;text-decoration:underline;text-underline-offset:3px}
+.refresh:disabled{opacity:.7;cursor:progress}
+@media(max-width:750px){
+  /* Standalone iOS can draw app contents under the clock. Keep controls below it. */
+  .shell{padding-top:max(64px,calc(env(safe-area-inset-top) + 18px))}
+  .masthead{height:auto;min-height:66px;padding-bottom:14px;gap:6px}
+  .brand{min-width:0;flex:1 1 auto;gap:7px}
+  .brand-words{min-width:0}
+  .brand-words b{font-size:10px;letter-spacing:.8px;line-height:1.25}
+  .brand-words small{font-size:8px;letter-spacing:.55px}
+  .brand-mark{flex-shrink:0}
+  .top-actions{flex:0 0 auto;gap:5px;position:relative;z-index:5}
+  .top-actions #health-text{font-size:10px;white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis}
+  .refresh{position:relative;z-index:6;touch-action:manipulation;min-width:78px;min-height:44px;margin-left:2px;padding:10px 9px;font-size:12px}
+}
