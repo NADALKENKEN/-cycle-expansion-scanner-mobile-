@@ -97,6 +97,16 @@ def render_period(period):
     st.write(f"**{r['銘柄']}**　{r['判定']} / スコア {r['スコア']}（勝率ではありません）")
     st.caption(f"主な形状: {r.get('主な根拠','—')} ／ 成立条件: {r['検証条件']} ／ データ: {r['データ']} ／ 基準日: {r['基準日']}")
     st.info(f"エントリー適性: {r.get('エントリー適性','—')}/100 ／ {r.get('エントリー判定','評価待ち')}")
+    br=r.get('ブレイク基準情報',{})
+    if isinstance(br,dict) and br:
+        with st.container(border=True):
+            st.markdown('**📍 ブレイク判定ライン（参考日足）**')
+            st.write(f"{br['timeframe']} ／ {br['line_name']} ／ 基準日 {br['as_of']}")
+            st.metric('終値の条件',f"{br['comparison']} {br['reference_price']:g}")
+            st.caption(f"{br['state']} ／ 残り {br['remaining_price']:g}（{br['remaining_pct']:.2f}%）")
+            if br['bb_required']:
+                st.caption(f"追加条件：同じ日足で {br['bb_name']} の外側。前回BB参考値 {br['bb_reference']:g}（翌日変化）")
+            st.caption(br['caution'])
     cautions=r.get('エントリー注意',[])
     if isinstance(cautions,list) and cautions: st.caption('判断材料: '+' / '.join(cautions))
     details=r.get('根拠詳細',[])
