@@ -47,12 +47,24 @@
         <label class="field"><span>対象市場</span><select id="market"><option value="すべて">すべての市場</option><option value="日本株">日本株</option><option value="米国株">米国株</option><option value="SBI FX">SBI FX</option><option value="SBI CFD">SBI CFD</option></select></label>
         <label class="field"><span>抽出条件</span><select id="signal"><option value="候補">初動と準備</option><option value="初動">初動のみ</option><option value="準備">準備のみ</option><option value="すべて">全評価を表示</option></select></label>
       </div>
+      <label class="field technique-filter"><span>検出テクニカルで絞り込み</span><select id="technique">
+        <option value="すべて">すべてのテクニカル</option>
+        <option value="エクスパンション">BBエクスパンション</option>
+        <option value="スクイーズ">BBスクイーズ後</option>
+        <option value="ブレイク">高値・安値ブレイク</option>
+        <option value="ライトトランスレーション">ライトトランスレーション</option>
+        <option value="レフトトランスレーション">レフトトランスレーション</option>
+        <option value="EMA押し目">EMA押し目買い</option>
+        <option value="EMA戻り">EMA戻り売り</option>
+        <option value="出来高条件">株式出来高条件</option>
+      </select></label>
       <label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="銘柄名・ティッカーで検索" autocomplete="off"></label>
     </section>
     <div id="message" class="message" role="status" aria-live="polite"></div>
     <section class="cards" id="results" aria-live="polite"></section>
     <section class="technical-note">
       <h3>判定基準 <span>RULEBOOK</span></h3>
+      <div class="rule"><b>表示の見方</b><p>各銘柄の「検出したテクニカル」は当該売買方向で成立した条件です。「根拠と未成立条件」を開くと数値・判定理由を確認できます。テクニカルが効くことや将来の勝率を証明するものではありません。</p></div>
       <div class="rule"><b>短期</b><p>日足20日ブレイク・EMA20/50・BB拡大・RSI/MACD・株式出来高を中心に評価。</p></div>
       <div class="rule"><b>中期</b><p>日足55日ブレイクまたは押し目・EMA50/200・週足トレンドを中心に評価。</p></div>
       <div class="rule"><b>損切り・利確</b><p>参考損切りは直近の高安とATRから試算。2R目標は損失幅の2倍。実際の逆指値価格ではありません。</p></div>
