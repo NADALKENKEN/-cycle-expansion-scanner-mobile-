@@ -18,6 +18,7 @@ const displayTime = iso => {
   return Number.isNaN(d.getTime()) ? '時刻不明' : new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(d)+' JST';
 };
 const safeDaysOld = iso => iso ? Math.max(0,(Date.now()-new Date(iso).getTime())/86400000) : null;
+const staleDayReport = meta => !meta?.generated_at || safeDaysOld(meta.generated_at)===null || safeDaysOld(meta.generated_at)>(90/1440);
 const classify = s => s?.includes('買い') ? 'buy' : s?.includes('ショート') ? 'sell' : '';
 
 function makeSpark(line, className) {
@@ -100,6 +101,7 @@ function card(r,charts){
 function filterRows(){
   const p=state.payload;
   if(!p)return [];
+  if(state.horizon==='デイトレ' && staleDayReport(p.meta))return [];
   const term=state.term.toLocaleLowerCase('ja-JP').trim();
   const scoreSignal=s=>s?.includes('初動')?0:s?.includes('準備')?1:s?.includes('要確認')?2:3;
   return (p.rows||[]).filter(r=>
@@ -115,7 +117,7 @@ function banner(message, type='info') { $('message').innerHTML=message?`<div cla
 function render(){
   const p=state.payload;
   if(!p)return;
-  const rows=(p.rows||[]).filter(r=>r.horizon===state.horizon);
+  const rows=(p.rows||[]).filter(r=>r.horizon===state.horizon && !(state.horizon==='デイトレ'&&staleDayReport(p.meta)));
   const count=predicate=>rows.filter(predicate).length;
   $('n-buy').textContent=count(r=>r.signal==='買い初動');
   $('n-short').textContent=count(r=>r.signal==='ショート初動');
@@ -133,7 +135,10 @@ function render(){
   if(state.horizon==='デイトレ'){
     const frames=p.meta?.intraday_analyzed ?? 0;
     const fresh=rows.filter(r=>r.signal?.includes('初動')||r.signal?.includes('準備')).length;
-    if(!p.meta?.generated_at||frames===0){
+    if(staleDayReport(p.meta)){
+      $('health-dot').className='status-pip bad';$('health-text').textContent='更新遅延';
+      banner('公開データの更新から90分以上経過しています。古いデイトレ候補は非表示にしました。GitHub Actionsで再分析してください。','error');
+    }else if(frames===0){
       $('health-dot').className='status-pip bad';$('health-text').textContent='15分足未取得';
       banner('デイトレ用の15分足データを取得できていません。GitHub Actionsの実行状態をご確認ください。','error');
     }else{
