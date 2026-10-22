@@ -1,0 +1,68 @@
+name: Cycle Expansion iPhone Scanner
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '35 22 * * 0-4'
+    - cron: '35 12 * * 1-5'
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: cycle-expansion-mobile-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Unpack independent scanner
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, lzma, json
+          archive=Path('scanner_source.b64').read_text(encoding='ascii')
+          contents=json.loads(lzma.decompress(base64.b64decode(archive)).decode('utf-8'))
+          for fname, value in contents.items():
+              file=Path(fname)
+              file.parent.mkdir(parents=True, exist_ok=True)
+              file.write_text(value, encoding='utf-8')
+          print('Restored',len(contents),'scanner files')
+          PY
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run scanner tests
+        run: python -m pytest -q
+      - name: Scan markets and export iPhone dashboard
+        run: |
+          if [ -f universe.csv ]; then
+            python export_site.py --universe universe.csv
+          else
+            python export_site.py
+          fi
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload scanner site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
