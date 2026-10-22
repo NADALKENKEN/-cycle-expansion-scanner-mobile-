@@ -8,19 +8,20 @@ import plotly.graph_objects as go
 from scanner.universe import built_in, merge_user_csv
 from scanner.data import load_ohlcv,DATA_DIR,safe_filename,confirm_four_hour
 from scanner.engine import scan_universe
+from scanner.daytrade import load_day_prices, scan_day_universe
 
 st.set_page_config(page_title='Multi-Market Cycle & Expansion Scanner',page_icon='📈',layout='wide')
 st.title('📈 Cycle × Expansion — 独立スキャナー')
-st.caption('日本株・米国株・SBI FX・SBI店頭CFD ｜ 短期・中期独立判定 ｜ 買い・ショート')
+st.caption('日本株・米国株・SBI FX・SBI店頭CFD ｜ デイトレ・短期・中期独立判定 ｜ 買い・ショート')
 st.warning('このソフトは売買候補抽出ツールです。SBIへの接続・発注は行いません。FX/CFDの外部データはSBIの提示価格ではなく参考指標です。')
 
 assets=built_in()
 with st.sidebar:
     st.header('スキャン設定')
     markets=st.multiselect('対象市場',['日本株','米国株','SBI FX','SBI CFD'],default=['日本株','米国株','SBI FX','SBI CFD'])
-    choice=st.radio('売買期間',['両方','短期','中期'])
-    presets={'両方':('短期','中期'),'短期':('短期',),'中期':('中期',)}
-    status_opts=['買い初動','ショート初動','買い準備','ショート準備','要確認（損切幅過大）','様子見']
+    choice=st.radio('売買期間',['全期間','デイトレ','短期','中期'])
+    presets={'全期間':('短期','中期'),'デイトレ':(),'短期':('短期',),'中期':('中期',)}
+    status_opts=['買い初動','ショート初動','買い準備','ショート準備','要確認（損切幅過大）','参考のみ（古い15分足）','様子見']
     wanted=st.multiselect('表示する判定',status_opts,default=status_opts[:4])
     min_score=st.slider('表示最低スコア',0,100,55,5)
     only_custom=st.toggle('CSV指定銘柄のみ（独自リスト優先）',value=False)
@@ -44,8 +45,12 @@ if go_scan:
     else:
         with st.spinner('価格履歴を取得して判定しています。通信状況によっては失敗銘柄が発生します。'):
             try:
-                frames,refs,fetch_errors=load_ohlcv(assets)
-                rows,analysis_errors=scan_universe(assets,frames,refs,presets[choice])
+                frames,refs,fetch_errors=load_ohlcv(assets) if choice!='デイトレ' else ({},{},[])
+                rows,analysis_errors=scan_universe(assets,frames,refs,presets[choice]) if presets[choice] else (pd.DataFrame(),[])
+                dayframes,day_errors=load_day_prices(assets) if choice in ('全期間','デイトレ') else ({},[])
+                dayrows,day_scan_errors=scan_day_universe(assets,dayframes)
+                if not dayrows.empty:
+                    rows=pd.concat([rows,dayrows],ignore_index=True)
                 if four_hour and not rows.empty:
                     rows['4時間足']='未確認'
                     mask=(rows['期間']=='短期') & (rows['判定'].isin(['買い初動','ショート初動','買い準備','ショート準備']))
@@ -54,7 +59,8 @@ if go_scan:
                         rows.loc[idx,'4時間足']=confirm_four_hour(r['シンボル'],r['方向'])
                 st.session_state['results']=rows
                 st.session_state['frames']=frames
-                st.session_state['issues']=fetch_errors+analysis_errors
+                st.session_state['dayframes']=dayframes
+                st.session_state['issues']=fetch_errors+analysis_errors+day_errors+day_scan_errors
                 st.session_state['runat']=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 st.session_state['scanned_count']=len(assets)
             except Exception as exc:
@@ -69,7 +75,7 @@ results=st.session_state.get('results',pd.DataFrame())
 if 'runat' in st.session_state:
     st.caption(f"最後の実行: {st.session_state['runat']} / 対象 {st.session_state.get('scanned_count',0)}銘柄。これは約定通知ではありません。")
 
-short_tab,medium_tab,assets_tab,issues_tab=st.tabs(['⚡ 短期（3〜10営業日）','📊 中期（2週間〜3か月）','🗂 取扱銘柄・CSV','⚠️ 注意・取得失敗'])
+day_tab,short_tab,medium_tab,assets_tab,issues_tab=st.tabs(['◷ デイトレ（15分足）','⚡ 短期（3〜10営業日）','📊 中期（2週間〜3か月）','🗂 取扱銘柄・CSV','⚠️ 注意・取得失敗'])
 
 
 def render_period(period):
@@ -90,7 +96,7 @@ def render_period(period):
     if '4時間足' in d.columns:show.insert(5,'4時間足')
     st.dataframe(d[show],use_container_width=True,hide_index=True,height=450)
     csv=d.to_csv(index=False).encode('utf-8-sig')
-    st.download_button('📥 この期間の結果をCSV保存',csv,file_name=f'signals_{"short" if period=="短期" else "medium"}.csv',mime='text/csv',key='download_'+period)
+    st.download_button('📥 この期間の結果をCSV保存',csv,file_name=f'signals_{"day" if period=="デイトレ" else "short" if period=="短期" else "medium"}.csv',mime='text/csv',key='download_'+period)
     opts=[f'{r["市場"]} | {r["銘柄"]} | {r["方向"]} | {r["判定"]}' for _,r in d.iterrows()]
     selection=st.selectbox('チャート・根拠を詳しく確認',range(len(opts)),format_func=lambda i:opts[i],key='sel_'+period)
     r=d.iloc[selection]
@@ -100,7 +106,7 @@ def render_period(period):
     br=r.get('ブレイク基準情報',{})
     if isinstance(br,dict) and br:
         with st.container(border=True):
-            st.markdown('**📍 ブレイク判定ライン（参考日足）**')
+            st.markdown('**📍 ブレイク判定ライン（参考確定足）**')
             st.write(f"{br['timeframe']} ／ {br['line_name']} ／ 基準日 {br['as_of']}")
             st.metric('終値の条件',f"{br['comparison']} {br['reference_price']:g}")
             st.caption(f"{br['state']} ／ 残り {br['remaining_price']:g}（{br['remaining_pct']:.2f}%）")
@@ -117,7 +123,7 @@ def render_period(period):
             missing=r.get('未成立条件',[])
             if isinstance(missing,list) and missing: st.warning('未成立：'+' / '.join(missing))
     st.caption(f"注意: {r['注意'] or 'スクリーニング指標のみ。板情報・売買可否・コストは未反映。'}")
-    base=st.session_state['frames'].get((r['市場'],r['銘柄']))
+    base=(st.session_state.get('dayframes',{}) if period=='デイトレ' else st.session_state['frames']).get((r['市場'],r['銘柄']))
     if base is not None:
         from scanner.indicators import add_indicators
         df=add_indicators(base[0]).tail(170)
@@ -131,6 +137,9 @@ def render_period(period):
         st.plotly_chart(fig,use_container_width=True,key='chart_'+period)
         st.caption('参考エントリーは確定日足の終値。翌日その価格で約定できるとは限りません。建玉サイズ・証拠金・スプレッド・スワップ・限月調整などは未計算。')
 
+with day_tab:
+    st.caption('15分足・公開参考レート。遅延や取引時間外のデータは、初動候補に含まれません。')
+    render_period('デイトレ')
 with short_tab:render_period('短期')
 with medium_tab:render_period('中期')
 with assets_tab:
