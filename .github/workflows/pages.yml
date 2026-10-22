@@ -9,6 +9,7 @@ on:
       - 'tests/**'
       - 'site/**'
       - 'export_site.py'
+      - 'app.py'
       - 'requirements.txt'
       - '.github/workflows/pages.yml'
       - 'universe.csv'
